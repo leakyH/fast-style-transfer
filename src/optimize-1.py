@@ -5,7 +5,7 @@ import tensorflow as tf, numpy as np, os
 import transform
 from utils import get_img
 
-STYLE_LAYERS = ('relu4_1', 'relu5_1')
+STYLE_LAYERS = ('relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1')
 CONTENT_LAYER = 'relu4_2'
 DEVICES = 'CUDA_VISIBLE_DEVICES'
 
@@ -94,8 +94,6 @@ def optimize(content_targets, style_target, content_weight, style_weight,
         uid = random.randint(1, 100)
         print("UID: %s" % uid)
         for epoch in range(epochs):
-            print("epoch="+epoch)
-            epoch_time_start=time.time()
             num_examples = len(content_targets)
             iterations = 0
             while iterations * batch_size < num_examples:
@@ -138,9 +136,7 @@ def optimize(content_targets, style_target, content_weight, style_weight,
                        saver = tf.train.Saver()
                        res = saver.save(sess, save_path)
                     yield(_preds, losses, iterations, epoch)
-            epoch_time_end=time.time()
-            epoch_time_delta=epoch_time_end-epoch_time_start
-            print("epoch "+epoch+" lasts "+epoch_time_delta)
+
 def _tensor_size(tensor):
     from operator import mul
     return functools.reduce(mul, (d.value for d in tensor.get_shape()[1:]), 1)
