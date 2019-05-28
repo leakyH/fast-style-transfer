@@ -105,7 +105,7 @@ def optimize(content_targets, style_target, content_weight, style_weight,
                 X_batch = np.zeros(batch_shape, dtype=np.float32)
                 for j, img_p in enumerate(content_targets[curr:step]):
                    X_batch[j] = get_img(img_p, (256,256,3)).astype(np.float32)
-
+                print('epoch='+str(epoch)+' iter='+str(iterations))
                 iterations += 1
                 assert X_batch.shape[0] == batch_size
 
