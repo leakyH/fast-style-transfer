@@ -7,6 +7,7 @@ from utils import get_img
 
 STYLE_LAYERS = ('relu1_1', 'relu2_1', 'relu3_1', 'relu4_1', 'relu5_1')
 CONTENT_LAYER = 'relu1_2'
+#明确特征表示层
 DEVICES = 'CUDA_VISIBLE_DEVICES'
 
 # np arr, np arr
@@ -27,7 +28,7 @@ def optimize(content_targets, style_target, content_weight, style_weight,
     style_shape = (1,) + style_target.shape
     print(style_shape)
 
-    # precompute style features
+    #先计算style 图片的style feature值，利用从style layer中提取到的特征图
     with tf.Graph().as_default(), tf.device('/cpu:0'), tf.Session() as sess:
         style_image = tf.placeholder(tf.float32, shape=style_shape, name='style_image')
         style_image_pre = vgg.preprocess(style_image)
@@ -38,7 +39,7 @@ def optimize(content_targets, style_target, content_weight, style_weight,
             features = np.reshape(features, (-1, features.shape[3]))
             gram = np.matmul(features.T, features) / features.size
             style_features[layer] = gram
-
+    #计算内容图的content 从content layer提取特征图
     with tf.Graph().as_default(), tf.Session() as sess:
         X_content = tf.placeholder(tf.float32, shape=batch_shape, name="X_content")
         X_pre = vgg.preprocess(X_content)
@@ -75,19 +76,18 @@ def optimize(content_targets, style_target, content_weight, style_weight,
             grams = tf.matmul(feats_T, feats) / size
             style_gram = style_features[style_layer]
             style_losses.append(2 * tf.nn.l2_loss(grams - style_gram)/style_gram.size)
-
+        
         style_loss = style_weight * functools.reduce(tf.add, style_losses) / batch_size
 
-        # total variation denoising
+        #计算结果图像的平滑程度作为loss的一部分
         tv_y_size = _tensor_size(preds[:,1:,:,:])
         tv_x_size = _tensor_size(preds[:,:,1:,:])
         y_tv = tf.nn.l2_loss(preds[:,1:,:,:] - preds[:,:batch_shape[1]-1,:,:])
         x_tv = tf.nn.l2_loss(preds[:,:,1:,:] - preds[:,:,:batch_shape[2]-1,:])
         tv_loss = tv_weight*2*(x_tv/tv_x_size + y_tv/tv_y_size)/batch_size
 
-        loss = content_loss + style_loss + tv_loss
+        loss = content_loss + style_loss + tv_loss#loss由三部分组成
 
-        # overall loss
         train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
         sess.run(tf.global_variables_initializer())
         import random
@@ -105,7 +105,7 @@ def optimize(content_targets, style_target, content_weight, style_weight,
                 X_batch = np.zeros(batch_shape, dtype=np.float32)
                 for j, img_p in enumerate(content_targets[curr:step]):
                    X_batch[j] = get_img(img_p, (256,256,3)).astype(np.float32)
-                print('epoch='+str(epoch)+' iter='+str(iterations))
+
                 iterations += 1
                 assert X_batch.shape[0] == batch_size
 
